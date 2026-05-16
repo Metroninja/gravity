@@ -1,0 +1,13 @@
+node_modules
+build
+.react-router
+.cache
+.git
+.gitignore
+.env
+.env.local
+.docker-data
+*.log
+Dockerfile*
+docker-compose*.yml
+README.md

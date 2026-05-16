@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary palette */
+  --color-seashell: #f7ede8;
+  --color-magenta: #b62f73;
+  --color-burnt-sienna: #ea7144;
+  --color-harvest-gold: #edad1e;
+  --color-off-black: #0b0c0a;
+
+  /* Secondary palette */
+  --color-butter-yellow: #faeac6;
+  --color-sienna: #993213;
+  --color-black-bean: #360d04;
+
+  /* Brand typography:
+   *   Display = Denton (high-contrast serif, used for h1–h3 and feature copy)
+   *   Body    = Nexa (geometric sans-serif, used for paragraphs and UI)
+   * Both are loaded via the @font-face blocks below. The generic fallbacks
+   * keep the page legible during the WOFF2 fetch. */
+  --font-display: "Denton", "Fraunces", ui-serif, Georgia, serif;
+  --font-body: "Nexa", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1.25rem;
+}
+
+/* Nexa — body / UI */
+@font-face {
+  font-family: "Nexa";
+  src: url("/fonts/nexa-300.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Nexa";
+  src: url("/fonts/nexa-400.woff2") format("woff2");
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Nexa";
+  src: url("/fonts/nexa-700.woff2") format("woff2");
+  font-weight: 600 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Denton — display / headings */
+@font-face {
+  font-family: "Denton";
+  src: url("/fonts/denton-300.woff2") format("woff2");
+  font-weight: 200 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Denton";
+  src: url("/fonts/denton-300-italic.woff2") format("woff2");
+  font-weight: 200 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Denton";
+  src: url("/fonts/denton-800.woff2") format("woff2");
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Denton";
+  src: url("/fonts/denton-800-italic.woff2") format("woff2");
+  font-weight: 600 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@layer base {
+  html,
+  body {
+    @apply bg-seashell text-off-black;
+    font-family: var(--font-body);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  a {
+    @apply text-magenta;
+  }
+
+  /* Focus styles use brand magenta with the seashell page color for contrast. */
+  :focus-visible {
+    outline: 2px solid var(--color-magenta);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-magenta px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-black-bean active:scale-[0.98] disabled:opacity-60;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-full border border-off-black/15 bg-white px-6 py-3 font-semibold text-off-black transition hover:bg-butter-yellow;
+  }
+
+  .card {
+    @apply rounded-[var(--radius-card)] bg-white shadow-sm ring-1 ring-off-black/5;
+  }
+}

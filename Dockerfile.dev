@@ -1,0 +1,17 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install build tools for native modules (postgres driver, etc.).
+RUN apk add --no-cache python3 make g++
+
+COPY package.json package-lock.json* ./
+RUN npm install --no-audit --no-fund
+
+# Source is mounted as a volume by docker-compose, but copying here lets the
+# image build standalone too.
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

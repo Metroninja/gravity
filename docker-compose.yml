@@ -1,0 +1,73 @@
+name: janneke
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8090:3000"
+    environment:
+      NODE_ENV: development
+      APP_BASE_URL: http://localhost:8090
+      DATABASE_URL: postgres://janneke:janneke_dev@db:5432/janneke
+      SESSION_SECRET: ${SESSION_SECRET:-dev-secret-change-me-please-32chars}
+      # Fill these in your local .env file before logging in via Auth0.
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-}
+      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET:-}
+      AUTH0_CALLBACK_URL: http://localhost:8090/auth/callback
+      AUTH0_LOGOUT_RETURN_URL: http://localhost:8090
+      GCS_BUCKET: janneke-media
+      GCS_PROJECT_ID: janneke-local
+      GCS_EMULATOR_HOST: http://gcs:4443
+    volumes:
+      - .:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      gcs:
+        condition: service_started
+    command: sh -c "npm install && npm run dev"
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: janneke
+      POSTGRES_PASSWORD: janneke_dev
+      POSTGRES_DB: janneke
+    ports:
+      # Host port 5442 -> container port 5432. Connect pgAdmin to
+      # localhost:5442 with user/db `janneke`, password `janneke_dev`.
+      - "5442:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U janneke -d janneke"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  gcs:
+    image: fsouza/fake-gcs-server:latest
+    command:
+      - "-scheme=http"
+      - "-port=4443"
+      - "-public-host=gcs:4443"
+      - "-external-url=http://localhost:4443"
+    ports:
+      - "4443:4443"
+    volumes:
+      - gcs_data:/storage
+      - ./docker/gcs-seed:/data
+    # The /data directory is scanned at boot; placing an empty file under
+    # janneke-media/.keep ensures the bucket exists.
+    environment:
+      STORAGE_DIR: /storage
+
+volumes:
+  db_data:
+  gcs_data:
+  web_node_modules:

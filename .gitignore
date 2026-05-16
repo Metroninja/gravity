@@ -1,0 +1,16 @@
+node_modules
+.cache
+.env
+.env.local
+.DS_Store
+
+/build
+/public/build
+.react-router
+
+# Drizzle generated artifacts are checked in, but the local studio cache is not.
+.drizzle
+
+# Local storage for the fake-gcs-server volume.
+.docker-data
+seed/assets/*
