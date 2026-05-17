@@ -6,11 +6,15 @@ import { slugify } from "~/lib/slug";
 export type CourseFormValues = {
   title: string;
   slug: string;
+  tagline: string;
   description: string;
   coverKey: string | null;
   coverPreviewUrl: string | null;
   sortOrder: number;
   published: boolean;
+  publicLanding: boolean;
+  priceCents: number | null;
+  currency: string;
 };
 
 type Props = {
@@ -124,6 +128,22 @@ export function CourseForm({ mode, initial, errors = {}, footerExtras }: Props) 
       </Field>
 
       <Field
+        label="Tagline"
+        htmlFor="tagline"
+        error={errors.tagline}
+        hint="Korte zin die op de publieke landingspagina onder de titel verschijnt."
+      >
+        <input
+          id="tagline"
+          name="tagline"
+          type="text"
+          maxLength={200}
+          defaultValue={initial.tagline}
+          className={inputClass}
+        />
+      </Field>
+
+      <Field
         label="Omschrijving"
         htmlFor="description"
         error={errors.description}
@@ -210,6 +230,51 @@ export function CourseForm({ mode, initial, errors = {}, footerExtras }: Props) 
               className="h-5 w-5 accent-magenta"
             />
             <span className="text-off-black">Zichtbaar voor cursisten</span>
+          </label>
+        </Field>
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Field
+          label="Prijs (in euro)"
+          htmlFor="priceEuros"
+          error={errors.priceCents}
+          hint="Laat leeg om geen koopknop te tonen. Toon je prijs incl. BTW."
+        >
+          <div className="flex items-center gap-2 rounded-lg border border-off-black/15 bg-white px-3 py-2">
+            <span className="text-off-black/50">EUR</span>
+            <input
+              id="priceEuros"
+              name="priceEuros"
+              type="number"
+              min={0}
+              step="0.01"
+              inputMode="decimal"
+              defaultValue={
+                initial.priceCents != null
+                  ? (initial.priceCents / 100).toFixed(2)
+                  : ""
+              }
+              className="flex-1 bg-transparent outline-none"
+            />
+          </div>
+        </Field>
+
+        <Field
+          label="Publieke landingspagina"
+          htmlFor="publicLanding"
+          error={errors.publicLanding}
+          hint="Toon /courses/{slug} aan iedereen, ook als ze niet zijn ingelogd."
+        >
+          <label className="flex items-center gap-2 rounded-lg border border-off-black/15 bg-white px-3 py-2">
+            <input
+              id="publicLanding"
+              name="publicLanding"
+              type="checkbox"
+              defaultChecked={initial.publicLanding}
+              className="h-5 w-5 accent-magenta"
+            />
+            <span className="text-off-black">Toon publieke landingspagina</span>
           </label>
         </Field>
       </div>

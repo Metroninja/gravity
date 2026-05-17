@@ -29,9 +29,16 @@ const StorageSchema = z.object({
   GCS_SIGNING_SERVICE_ACCOUNT: z.string().optional(),
 });
 
+const StripeSchema = z.object({
+  STRIPE_SECRET_KEY: z.string().min(1),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1),
+  STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+});
+
 export type AppEnv = z.infer<typeof AppSchema>;
 export type Auth0Env = z.infer<typeof Auth0Schema>;
 export type StorageEnv = z.infer<typeof StorageSchema>;
+export type StripeEnv = z.infer<typeof StripeSchema>;
 
 function format(prefix: string, err: z.ZodError) {
   const issues = err.issues
@@ -43,6 +50,7 @@ function format(prefix: string, err: z.ZodError) {
 let cachedApp: AppEnv | null = null;
 let cachedAuth0: Auth0Env | null = null;
 let cachedStorage: StorageEnv | null = null;
+let cachedStripe: StripeEnv | null = null;
 
 export function appEnv(): AppEnv {
   if (cachedApp) return cachedApp;
@@ -77,4 +85,19 @@ export function storageEnv(): StorageEnv {
   }
   cachedStorage = parsed.data;
   return cachedStorage;
+}
+
+export function stripeEnv(): StripeEnv {
+  if (cachedStripe) return cachedStripe;
+  const parsed = StripeSchema.safeParse(process.env);
+  if (!parsed.success) {
+    throw new Error(
+      format(
+        "Invalid or missing Stripe environment variables — fill in STRIPE_* in your .env (see .env.example):",
+        parsed.error,
+      ),
+    );
+  }
+  cachedStripe = parsed.data;
+  return cachedStripe;
 }

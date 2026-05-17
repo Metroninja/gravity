@@ -13,6 +13,9 @@ type CourseListRow = {
   description: string;
   cover_key: string | null;
   published: boolean;
+  public_landing: boolean;
+  price_cents: number | null;
+  currency: string;
   sort_order: number;
   module_count: number;
   video_count: number;
@@ -35,6 +38,9 @@ export async function loader({ request }: Route.LoaderArgs) {
       c.description,
       c.cover_key,
       c.published,
+      c.public_landing,
+      c.price_cents,
+      c.currency,
       c.sort_order,
       (SELECT COUNT(*)::int FROM modules m
          WHERE m.course_id = c.id)                          AS module_count,
@@ -58,6 +64,9 @@ export async function loader({ request }: Route.LoaderArgs) {
       title: r.title,
       description: r.description,
       published: r.published,
+      publicLanding: r.public_landing,
+      priceCents: r.price_cents,
+      currency: r.currency,
       sortOrder: r.sort_order,
       moduleCount: r.module_count,
       videoCount: r.video_count,
@@ -105,6 +114,7 @@ export default function AdminCoursesIndex({ loaderData }: Route.ComponentProps) 
               <tr>
                 <th className="px-4 py-3">Programma</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Prijs</th>
                 <th className="px-4 py-3 text-right">Modules</th>
                 <th className="px-4 py-3 text-right">Video&apos;s</th>
                 <th className="px-4 py-3 text-right">PDF&apos;s</th>
@@ -142,17 +152,29 @@ export default function AdminCoursesIndex({ loaderData }: Route.ComponentProps) 
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    {c.published ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-magenta/10 px-2 py-0.5 text-xs font-medium text-magenta">
-                        <span className="size-1.5 rounded-full bg-magenta" />
-                        Live
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-off-black/10 px-2 py-0.5 text-xs font-medium text-off-black/70">
-                        <span className="size-1.5 rounded-full bg-off-black/40" />
-                        Concept
-                      </span>
-                    )}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {c.published ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-magenta/10 px-2 py-0.5 text-xs font-medium text-magenta">
+                          <span className="size-1.5 rounded-full bg-magenta" />
+                          Live
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-off-black/10 px-2 py-0.5 text-xs font-medium text-off-black/70">
+                          <span className="size-1.5 rounded-full bg-off-black/40" />
+                          Concept
+                        </span>
+                      )}
+                      {c.publicLanding ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-butter-yellow px-2 py-0.5 text-xs font-medium text-black-bean">
+                          Publiek
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {c.priceCents != null
+                      ? formatPrice(c.priceCents, c.currency)
+                      : "—"}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">
                     {c.moduleCount}
@@ -168,6 +190,16 @@ export default function AdminCoursesIndex({ loaderData }: Route.ComponentProps) 
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-3 text-sm">
+                      {c.publicLanding ? (
+                        <a
+                          href={`/courses/${c.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-off-black/70 hover:text-magenta hover:underline"
+                        >
+                          Landingspagina
+                        </a>
+                      ) : null}
                       <Link
                         to={`/admin/courses/${c.slug}/students`}
                         className="text-off-black/70 hover:text-magenta hover:underline"
@@ -190,6 +222,18 @@ export default function AdminCoursesIndex({ loaderData }: Route.ComponentProps) 
       )}
     </section>
   );
+}
+
+function formatPrice(cents: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("nl-NL", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    }).format(cents / 100);
+  } catch {
+    return `€ ${(cents / 100).toFixed(2)}`;
+  }
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

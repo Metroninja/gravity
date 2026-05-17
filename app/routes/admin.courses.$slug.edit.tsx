@@ -51,6 +51,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     values: {
       title: course.title,
       slug: course.slug,
+      tagline: course.tagline,
       description: course.description,
       coverKey: course.coverKey,
       coverPreviewUrl: course.coverKey
@@ -58,6 +59,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         : null,
       sortOrder: course.sortOrder,
       published: course.published,
+      publicLanding: course.publicLanding,
+      priceCents: course.priceCents,
+      currency: course.currency,
     } satisfies CourseFormValues,
     modules: moduleRows.map((m) => ({
       id: m.id,
@@ -190,6 +194,7 @@ export async function action({ params, request }: Route.ActionArgs) {
   // ---- Update course -----------------------------------------------------
   const title = ((form.get("title") as string) ?? "").trim();
   const slugRaw = ((form.get("slug") as string) ?? "").trim();
+  const tagline = ((form.get("tagline") as string) ?? "").trim();
   const description = ((form.get("description") as string) ?? "").trim();
   const newCoverKey = ((form.get("coverKey") as string) ?? "").trim() || null;
   const sortOrder = Number.parseInt(
@@ -197,6 +202,9 @@ export async function action({ params, request }: Route.ActionArgs) {
     10,
   );
   const published = form.get("published") === "on";
+  const publicLanding = form.get("publicLanding") === "on";
+  const priceEurosRaw = ((form.get("priceEuros") as string) ?? "").trim();
+  const priceCents = parsePriceCents(priceEurosRaw);
   const slug = slugify(slugRaw || title);
 
   const errors: Record<string, string> = {};
@@ -208,6 +216,11 @@ export async function action({ params, request }: Route.ActionArgs) {
   if (Number.isNaN(sortOrder) || sortOrder < 0) {
     errors.sortOrder = "Volgorde moet een positief getal zijn.";
   }
+  if (priceCents === "invalid") {
+    errors.priceCents = "Prijs moet een positief getal zijn.";
+  }
+
+  const resolvedPriceCents = priceCents === "invalid" ? null : priceCents;
 
   if (Object.keys(errors).length > 0) {
     return data(
@@ -216,6 +229,7 @@ export async function action({ params, request }: Route.ActionArgs) {
         values: {
           title,
           slug,
+          tagline,
           description,
           coverKey: newCoverKey,
           coverPreviewUrl: newCoverKey
@@ -223,6 +237,9 @@ export async function action({ params, request }: Route.ActionArgs) {
             : null,
           sortOrder: Number.isNaN(sortOrder) ? 0 : sortOrder,
           published,
+          publicLanding,
+          priceCents: resolvedPriceCents,
+          currency: existing.currency,
         } satisfies CourseFormValues,
       },
       { status: 400 },
@@ -242,6 +259,7 @@ export async function action({ params, request }: Route.ActionArgs) {
           values: {
             title,
             slug,
+            tagline,
             description,
             coverKey: newCoverKey,
             coverPreviewUrl: newCoverKey
@@ -249,6 +267,9 @@ export async function action({ params, request }: Route.ActionArgs) {
               : null,
             sortOrder,
             published,
+            publicLanding,
+            priceCents: resolvedPriceCents,
+            currency: existing.currency,
           } satisfies CourseFormValues,
         },
         { status: 400 },
@@ -258,7 +279,17 @@ export async function action({ params, request }: Route.ActionArgs) {
 
   await db
     .update(courses)
-    .set({ title, slug, description, coverKey: newCoverKey, sortOrder, published })
+    .set({
+      title,
+      slug,
+      tagline,
+      description,
+      coverKey: newCoverKey,
+      sortOrder,
+      published,
+      publicLanding,
+      priceCents: resolvedPriceCents,
+    })
     .where(eq(courses.id, existing.id));
 
   if (existing.coverKey && existing.coverKey !== newCoverKey) {
@@ -266,6 +297,14 @@ export async function action({ params, request }: Route.ActionArgs) {
   }
 
   return redirect(`/admin/courses/${slug}/edit`);
+}
+
+function parsePriceCents(raw: string): number | null | "invalid" {
+  if (!raw) return null;
+  const normalized = raw.replace(",", ".");
+  const num = Number.parseFloat(normalized);
+  if (!Number.isFinite(num) || num < 0) return "invalid";
+  return Math.round(num * 100);
 }
 
 export default function EditCoursePage({

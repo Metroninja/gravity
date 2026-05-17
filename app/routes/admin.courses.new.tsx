@@ -20,6 +20,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   const title = ((form.get("title") as string) ?? "").trim();
   const slugRaw = ((form.get("slug") as string) ?? "").trim();
+  const tagline = ((form.get("tagline") as string) ?? "").trim();
   const description = ((form.get("description") as string) ?? "").trim();
   const coverKey = ((form.get("coverKey") as string) ?? "").trim() || null;
   const sortOrder = Number.parseInt(
@@ -27,6 +28,9 @@ export async function action({ request }: Route.ActionArgs) {
     10,
   );
   const published = form.get("published") === "on";
+  const publicLanding = form.get("publicLanding") === "on";
+  const priceEurosRaw = ((form.get("priceEuros") as string) ?? "").trim();
+  const priceCents = parsePriceCents(priceEurosRaw);
 
   const slug = slugify(slugRaw || title);
 
@@ -39,6 +43,11 @@ export async function action({ request }: Route.ActionArgs) {
   if (Number.isNaN(sortOrder) || sortOrder < 0) {
     errors.sortOrder = "Volgorde moet een positief getal zijn.";
   }
+  if (priceCents === "invalid") {
+    errors.priceCents = "Prijs moet een positief getal zijn.";
+  }
+
+  const resolvedPriceCents = priceCents === "invalid" ? null : priceCents;
 
   if (Object.keys(errors).length > 0) {
     return data(
@@ -47,11 +56,15 @@ export async function action({ request }: Route.ActionArgs) {
         values: {
           title,
           slug,
+          tagline,
           description,
           coverKey,
           coverPreviewUrl: coverKey ? await getReadUrl(coverKey, 60 * 10) : null,
           sortOrder: Number.isNaN(sortOrder) ? 0 : sortOrder,
           published,
+          publicLanding,
+          priceCents: resolvedPriceCents,
+          currency: "eur",
         } satisfies CourseFormValues,
       },
       { status: 400 },
@@ -73,11 +86,15 @@ export async function action({ request }: Route.ActionArgs) {
         values: {
           title,
           slug,
+          tagline,
           description,
           coverKey: null,
           coverPreviewUrl: null,
           sortOrder,
           published,
+          publicLanding,
+          priceCents: resolvedPriceCents,
+          currency: "eur",
         } satisfies CourseFormValues,
       },
       { status: 400 },
@@ -87,23 +104,39 @@ export async function action({ request }: Route.ActionArgs) {
   await db.insert(courses).values({
     title,
     slug,
+    tagline,
     description,
     coverKey,
     sortOrder,
     published,
+    publicLanding,
+    priceCents: resolvedPriceCents,
+    currency: "eur",
   });
 
   return redirect(`/admin/courses/${slug}/edit`);
 }
 
+function parsePriceCents(raw: string): number | null | "invalid" {
+  if (!raw) return null;
+  const normalized = raw.replace(",", ".");
+  const num = Number.parseFloat(normalized);
+  if (!Number.isFinite(num) || num < 0) return "invalid";
+  return Math.round(num * 100);
+}
+
 const EMPTY: CourseFormValues = {
   title: "",
   slug: "",
+  tagline: "",
   description: "",
   coverKey: null,
   coverPreviewUrl: null,
   sortOrder: 0,
   published: false,
+  publicLanding: false,
+  priceCents: null,
+  currency: "eur",
 };
 
 export default function NewCoursePage({ actionData }: Route.ComponentProps) {

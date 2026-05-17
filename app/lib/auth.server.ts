@@ -24,7 +24,21 @@ async function getAuth0Config() {
   return cachedConfig;
 }
 
-export async function startLogin(request: Request, returnTo = "/courses") {
+type StartLoginOptions = {
+  returnTo?: string;
+  /** Maps to Auth0 `screen_hint`. "signup" deep-links into the signup form. */
+  screenHint?: "login" | "signup";
+  /** Maps to Auth0 `login_hint`. Pre-fills the email field. */
+  loginHint?: string;
+};
+
+export async function startLogin(
+  request: Request,
+  options: StartLoginOptions | string = {},
+) {
+  const opts: StartLoginOptions =
+    typeof options === "string" ? { returnTo: options } : options;
+  const returnTo = opts.returnTo ?? "/courses";
   const e = auth0Env();
   const config = await getAuth0Config();
 
@@ -42,6 +56,8 @@ export async function startLogin(request: Request, returnTo = "/courses") {
     nonce,
     // Universal Login lets users pick username/password OR Google.
   };
+  if (opts.screenHint) params.screen_hint = opts.screenHint;
+  if (opts.loginHint) params.login_hint = opts.loginHint;
 
   const authUrl = client.buildAuthorizationUrl(config, params);
 

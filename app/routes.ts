@@ -15,6 +15,7 @@ export default [
     route("courses", "routes/courses._index.tsx"),
     route("courses/:slug", "routes/courses.$slug.tsx"),
     route("courses/:slug/:videoId", "routes/courses.$slug.$videoId.tsx"),
+    route("checkout/success/:slug", "routes/checkout.success.$slug.tsx"),
   ]),
 
   route("admin", "routes/admin.tsx", [
@@ -39,7 +40,10 @@ export default [
     route("users/:userId", "routes/admin.users.$userId.tsx"),
   ]),
 
+  route("checkout/:slug", "routes/checkout.$slug.tsx"),
+
   route("api/progress", "routes/api.progress.tsx"),
   route("api/videos/:videoId/url", "routes/api.videos.$videoId.url.tsx"),
   route("api/admin/upload", "routes/api.admin.upload.tsx"),
+  route("api/stripe/webhook", "routes/api.stripe.webhook.tsx"),
 ] satisfies RouteConfig;

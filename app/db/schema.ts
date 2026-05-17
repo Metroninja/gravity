@@ -20,6 +20,12 @@ export const externalLinkKind = pgEnum("external_link_kind", [
   "mail",
   "other",
 ]);
+export const paymentStatus = pgEnum("payment_status", [
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+]);
 
 export const users = pgTable(
   "users",
@@ -45,10 +51,14 @@ export const courses = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     slug: text("slug").notNull(),
     title: text("title").notNull(),
+    tagline: text("tagline").notNull().default(""),
     description: text("description").notNull().default(""),
     coverKey: text("cover_key"),
     sortOrder: integer("sort_order").notNull().default(0),
     published: boolean("published").notNull().default(true),
+    publicLanding: boolean("public_landing").notNull().default(false),
+    priceCents: integer("price_cents"),
+    currency: text("currency").notNull().default("eur"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -164,6 +174,38 @@ export const externalLinks = pgTable("external_links", {
   sortOrder: integer("sort_order").notNull().default(0),
 });
 
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "restrict" }),
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    email: text("email").notNull(),
+    stripeSessionId: text("stripe_session_id").notNull(),
+    stripePaymentIntentId: text("stripe_payment_intent_id"),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull().default("eur"),
+    status: paymentStatus("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    sessionIdx: uniqueIndex("payments_stripe_session_idx").on(
+      t.stripeSessionId,
+    ),
+    courseIdx: index("payments_course_idx").on(t.courseId),
+    userIdx: index("payments_user_idx").on(t.userId),
+  }),
+);
+
 // Relations -----------------------------------------------------------------
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -216,5 +258,16 @@ export const videoProgressRelations = relations(videoProgress, ({ one }) => ({
   video: one(videos, {
     fields: [videoProgress.videoId],
     references: [videos.id],
+  }),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  course: one(courses, {
+    fields: [payments.courseId],
+    references: [courses.id],
+  }),
+  user: one(users, {
+    fields: [payments.userId],
+    references: [users.id],
   }),
 }));

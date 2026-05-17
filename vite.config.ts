@@ -10,6 +10,11 @@ export default defineConfig({
   server: {
     port: 3000,
     host: "0.0.0.0",
+    // Vite ≥5.4 rejects requests whose Host header isn't on this allow-list
+    // with 403, which breaks ngrok / Cloudflare Tunnel / etc. forwarding —
+    // and breaks Stripe webhook delivery via those tunnels. This config
+    // only affects the dev server; production runs via react-router-serve.
+    allowedHosts: true,
     watch: {
       usePolling: true,
     },
